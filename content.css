@@ -1,0 +1,127 @@
+#knowbefore-overlay-host {
+  all: initial;
+  position: fixed;
+  z-index: 2147483647;
+  top: 76px;
+  right: 20px;
+  width: min(360px, calc(100vw - 40px));
+  color: #17211b;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+#knowbefore-overlay-host * {
+  box-sizing: border-box;
+}
+
+.knowbefore-card {
+  background: #f7f4ec;
+  border: 2px solid #26382c;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(20, 31, 23, 0.24);
+  padding: 18px;
+  animation: knowbefore-enter 180ms ease-out;
+}
+
+.knowbefore-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.knowbefore-brand,
+.knowbefore-status,
+.knowbefore-label,
+.knowbefore-excerpt,
+.knowbefore-local {
+  margin: 0;
+}
+
+.knowbefore-brand {
+  color: #203e2b;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+}
+
+.knowbefore-status {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 4px;
+}
+
+.knowbefore-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #496052;
+  cursor: pointer;
+  display: flex;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  margin: -5px -5px 0 0;
+  padding: 0;
+  width: 28px;
+}
+
+.knowbefore-close:hover,
+.knowbefore-close:focus-visible {
+  color: #17211b;
+  outline: 2px solid #d08b43;
+  outline-offset: 2px;
+}
+
+.knowbefore-divider {
+  background: #cbd1c7;
+  height: 1px;
+  margin: 14px 0 12px;
+}
+
+.knowbefore-label {
+  color: #66746a;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.knowbefore-excerpt {
+  color: #26372c;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 6px;
+  max-height: 148px;
+  overflow: hidden;
+}
+
+.knowbefore-local {
+  color: #66746a;
+  font-family: "Trebuchet MS", sans-serif;
+  font-size: 10px;
+  margin-top: 12px;
+}
+
+@keyframes knowbefore-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  #knowbefore-overlay-host {
+    right: 12px;
+    top: 64px;
+    width: calc(100vw - 24px);
+  }
+}

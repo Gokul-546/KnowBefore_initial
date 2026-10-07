@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "KnowBefore",
+  "version": "0.1.0",
+  "description": "Detects Privacy Policy and Terms & Conditions pages and shows a local source excerpt.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["content.css"],
+      "js": ["policyDetector.js", "policyExtractor.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -62,7 +62,7 @@
     if (enoughContent && locatedMatch) {
       confidence = "HIGH";
     } else if (
-      enoughContent && urlMatch && supportingMatches.length >= 2
+      enoughContent && urlMatch && supportingMatches.length >= 3
     ) {
       confidence = "MEDIUM";
     }

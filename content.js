@@ -2,6 +2,8 @@
   "use strict";
 
   const HOST_ID = "knowbefore-overlay-host";
+  const PREVIEW_LINE_LIMIT = 8;
+  const PREVIEW_LINE_WIDTH = 52;
 
   function createTextElement(tagName, className, text) {
     const element = document.createElement(tagName);
@@ -10,7 +12,45 @@
     return element;
   }
 
-  function showOverlay({ policyContent, type, confidence }) {
+  function policyPreview(text) {
+    const paragraphs = (text || "").split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    const lines = [];
+
+    paragraphs.forEach((paragraph) => {
+      let line = "";
+      paragraph.split(/\s+/).forEach((word) => {
+        if (line && line.length + word.length + 1 > PREVIEW_LINE_WIDTH) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = line ? `${line} ${word}` : word;
+        }
+      });
+      if (line) lines.push(line);
+    });
+
+    let hasMore = lines.length > PREVIEW_LINE_LIMIT;
+    const previewLines = lines.slice(0, PREVIEW_LINE_LIMIT);
+    let preview = previewLines.join("\n");
+    const normalizedPolicy = (text || "").replace(/\s+/g, " ").trim();
+
+    if (!hasMore && preview.replace(/\s+/g, " ").trim() === normalizedPolicy && preview) {
+      const lastLineIndex = previewLines.length - 1;
+      const lastLineWords = previewLines[lastLineIndex].split(/\s+/);
+      if (lastLineWords.length > 1) {
+        lastLineWords.pop();
+        previewLines[lastLineIndex] = lastLineWords.join(" ");
+      } else {
+        previewLines[lastLineIndex] = previewLines[lastLineIndex].slice(0, -1);
+      }
+      preview = previewLines.join("\n").trimEnd();
+      hasMore = true;
+    }
+
+    return hasMore ? `${preview}${preview ? "\n" : ""}...` : preview;
+  }
+
+  function showOverlay({ policyContent, analysis, evidence, type, confidence }) {
     if (document.getElementById(HOST_ID)) {
       return;
     }
@@ -46,7 +86,7 @@
       }
       .knowbefore-brand, .knowbefore-status, .knowbefore-label,
       .knowbefore-confidence, .knowbefore-details, .knowbefore-label,
-      .knowbefore-policy-text, .knowbefore-local { margin: 0; }
+      .knowbefore-topics, .knowbefore-topic, .knowbefore-preview { margin: 0; }
       .knowbefore-brand {
         color: #203e2b;
         font-family: "Trebuchet MS", sans-serif;
@@ -97,17 +137,54 @@
         font: 11px/1.5 "Trebuchet MS", sans-serif;
         margin: 10px 0;
       }
-      .knowbefore-policy-text {
-        color: #26372c;
-        font: 13px/1.5 Georgia, "Times New Roman", serif;
-        max-height: min(42vh, 360px);
-        min-height: 48px;
-        overflow: auto;
-        padding-right: 6px;
-        overflow-wrap: anywhere;
-        white-space: pre-wrap;
+      .knowbefore-section-title {
+        color: #66746a;
+        font: 700 10px/1.4 "Trebuchet MS", sans-serif;
+        letter-spacing: 1.2px;
+        margin: 12px 0 6px;
+        text-transform: uppercase;
       }
-      .knowbefore-local { margin-top: 12px; }
+      .knowbefore-topics {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .knowbefore-topic {
+        border-left: 2px solid #78917c;
+        padding: 3px 0 3px 8px;
+      }
+      .knowbefore-topic-name {
+        color: #203e2b;
+        font: 700 12px/1.4 "Trebuchet MS", sans-serif;
+        margin: 0;
+      }
+      .knowbefore-evidence-label {
+        color: #66746a;
+        font: 10px/1.4 "Trebuchet MS", sans-serif;
+        margin: 2px 0 0;
+      }
+      .knowbefore-evidence {
+        color: #26372c;
+        font: 12px/1.4 Georgia, "Times New Roman", serif;
+        margin: 1px 0 0;
+        overflow-wrap: anywhere;
+      }
+      .knowbefore-preview {
+        background: #eeece3;
+        border-left: 2px solid #c0c9bd;
+        color: #26372c;
+        font: 12px/1.4 Georgia, "Times New Roman", serif;
+        max-height: calc(1.4em * 9);
+        overflow: hidden;
+        padding: 7px 9px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .knowbefore-topics-empty {
+        color: #26372c;
+        font: 12px/1.5 "Trebuchet MS", sans-serif;
+        margin: 0;
+      }
       @keyframes knowbefore-enter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     `;
     const container = document.createElement("section");
@@ -133,18 +210,57 @@
     const details = createTextElement(
       "p",
       "knowbefore-details",
-      `Source: ${policyContent.source} | Characters: ${policyContent.characterCount}`
+      `Characters: ${policyContent.characterCount} | Source: ${policyContent.source}`
     );
-    const policyText = createTextElement("pre", "knowbefore-policy-text", policyContent.text);
+    const topicLabels = {
+      dataCollection: "Data collection",
+      dataUsage: "Data usage",
+      dataSharing: "Data sharing",
+      dataRetention: "Data retention",
+      cookies: "Cookies",
+      userRights: "User rights",
+      security: "Security",
+      internationalTransfers: "International transfers",
+      accountDeletion: "Account deletion"
+    };
+    const topics = document.createElement("div");
+    topics.className = "knowbefore-topics";
+    Object.keys(topicLabels).forEach((category) => {
+      if (!analysis.categories[category]) return;
+      const topic = document.createElement("div");
+      topic.className = "knowbefore-topic";
+      topic.append(createTextElement("p", "knowbefore-topic-name", `✓ ${topicLabels[category]}`));
+      const categoryEvidence = evidence[category] || [];
+      if (categoryEvidence.length === 0) {
+        topic.append(
+          createTextElement("p", "knowbefore-evidence-label", "Evidence"),
+          createTextElement("p", "knowbefore-evidence", "Evidence unavailable.")
+        );
+      } else {
+        categoryEvidence.forEach((item) => {
+          topic.append(
+            createTextElement("p", "knowbefore-evidence-label", "Evidence"),
+            createTextElement("p", "knowbefore-evidence", `"${item.text}"`),
+            createTextElement("p", "knowbefore-evidence-label", `Matched: ${item.matchedTerms.join(" • ")}`)
+          );
+        });
+      }
+      topics.append(topic);
+    });
+    if (topics.children.length === 0) {
+      topics.append(createTextElement("p", "knowbefore-topics-empty", "No policy topics detected."));
+    }
+    const preview = createTextElement("pre", "knowbefore-preview", policyPreview(policyContent.text));
     const divider = document.createElement("div");
     divider.className = "knowbefore-divider";
     container.append(
       header,
       divider,
       details,
-      createTextElement("p", "knowbefore-label", "Extracted policy text"),
-      policyText,
-      createTextElement("p", "knowbefore-local", "Stays on this device")
+      createTextElement("p", "knowbefore-section-title", "Detected Topics"),
+      topics,
+      createTextElement("p", "knowbefore-section-title", "Policy Preview"),
+      preview
     );
 
     shadowRoot.append(style, container);
@@ -155,7 +271,9 @@
   if (detection.isPolicyPage) {
     const policyContent = globalThis.KnowBeforePolicyExtractor.extractPolicyContent();
     if (policyContent.text) {
-      showOverlay({ policyContent, type: detection.type, confidence: detection.confidence });
+      const analysis = globalThis.KnowBeforePolicyAnalyzer.analyzePolicyContent(policyContent.text);
+      const evidence = globalThis.KnowBeforePolicyEvidence.extractPolicyEvidence(policyContent.text, analysis);
+      showOverlay({ policyContent, analysis, evidence, type: detection.type, confidence: detection.confidence });
     }
   }
 })();
